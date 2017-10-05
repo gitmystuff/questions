@@ -1,0 +1,19 @@
+{
+  "name": "Question",
+  "version": "1.0.0",
+  "description": "NodeJS, JQuery educational activity.",
+  "author": "Cliff Whitworth",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gitmystuff"
+  },
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "cors": "^2.8.4",
+    "express": "^4.14.0",
+    "express-myconnection": "^1.0.4",
+    "mysql": "^2.14.1",
+    "path": "^0.12.7"
+  }
+}
