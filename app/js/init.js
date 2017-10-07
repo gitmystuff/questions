@@ -24,13 +24,17 @@ $( function () {
 	.done(function(header, nav, footer) {	
 
         $('#header').html(header[0]);
-		$('#nav').html(nav[0]);
+		$('#menu').html(nav[0]);
 		$('#footer').html(footer[0]);
 		
-        $('#title').css('margin-left', $('#content').offset().left);
+		$('.header-elements').css('margin-left', $('#content').offset().left);
+		$('.menu-elements').css('margin-left', $('#content').offset().left);
+		$('.footer-elements').css('margin-left', $('#content').offset().left);
         
         $( window ).resize(function() {
-            $('#title').css('margin-left', $('#content').offset().left);
+			$('.header-elements').css('margin-left', $('#content').offset().left);
+			$('.menu-elements').css('margin-left', $('#content').offset().left);
+			$('.footer-elements').css('margin-left', $('#content').offset().left);
         });
 		
 		if(window.location.hash.substr(1).split('/')[2]){
@@ -45,7 +49,7 @@ $( function () {
 			});
 			
 		} else {
-			$('#content').html('<h2>Activity</h2><span class="clickable">Got Answers?</span>');
+			$('#content').html('<div class="pad-me23"><h2>CONTENT</h2><span class="clickable">Start Questions</span></div>');
 		}
 		
 		$('.clickable')

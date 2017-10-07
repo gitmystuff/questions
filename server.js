@@ -114,7 +114,7 @@ getTemplate.get(function(req,res,next){
 	
     var template = req.params.template;
 	var fs = require('fs');	
-	fs.readFile(__dirname + '/app/activities/' + template + '.htm', function (err, data){
+	fs.readFile(__dirname + '/app/modules/' + template + '.htm', function (err, data){
 		res.send([data.toString()]);            
 	});
 
@@ -152,7 +152,7 @@ getContent.get(function(req,res,next){
 
     switch(parseInt(id)){
         case 1:
-            var content = '<div id="title"><h2>TITLE</h2></div>';
+            var content = '<div class="header-elements"><h2>HEADER</h2></div>';
             res.send([content]);
 			/*
 			var fs = require('fs');
@@ -162,18 +162,12 @@ getContent.get(function(req,res,next){
             */
             break;
 		case 2:
-            var content = '<div>NAVIGATION</div>';
+            var content = '<div class="menu-elements"><div>MENU</div></div>';
             res.send([content]);
             break;		
 		case 3:
-            var content = '<div>FOOTER</div>';
+            var content = '<div class="footer-elements"><div>FOOTER</div></div>';
 			res.send([content]);
-            break;
-		case 4:
-            var fs = require('fs');
-            fs.readFile(__dirname + '/app/activities/txtqstn.htm', function (err, data){
-                res.send([data.toString()]);            
-            });
             break;
     }
 	

@@ -1,0 +1,303 @@
+<!--
+activity module
+
+Sections:
+Comments
+Javascript
+Html
+Style
+
+-->
+
+<!--COMMENTS BEGIN
+###############################################################################
+###############################################################################
+###############################################################################
+
+Although this module is housed in Node, wanted to make something that didn't
+rely on server side rendering, that was light weight and would run in a 
+browser.
+
+COMMENTS END-->
+
+<div>
+<!-- SCRIPTS
+###############################################################################
+###############################################################################
+###############################################################################
+-->
+
+<script type="text/javascript">
+//<![CDATA[
+
+$(function () {
+    
+    var activity 		= window.location.hash.substr(1).split('/')[3],
+		Instructions 	= $.getJSON(apiAddress + 'getInstructions/' + activity),		
+		myQuestions,
+		myItem,
+		itemsPerSet,
+		userresp,
+		correctCount = 0;		
+
+	$.when(Instructions)
+	.done(function(instructions){
+		$('.instructions-span').html(instructions.Instructions);
+	});
+	
+	$('#activityTemplateDiv')
+	.on('click', '.start-activity-btn', function(){
+		
+		var ActivityInfo 	= $.getJSON(apiAddress + 'getActivityInfo/' + activity),
+			Items 			= $.getJSON(apiAddress + 'getItems/' + activity);
+		
+		$.when(ActivityInfo, Items)
+		.done(function(activityinfo, items){
+		
+			$('#innerpiece').html('<div class="questionDiv"></div>');
+			$('#doneContinueButtons').html('<br /><button class="done-btn" disabled>Done</button><div class="long-space"></div><button class="continue-btn" disabled>Continue</button><br /><br /><span class="feedbackTxt smaller-text"></span>');
+			itemsPerSet = activityinfo[0].ItemsPerSet;
+			myQuestions = $.makeArray(items[0]);
+			makeQuestion();
+			
+		});
+		
+	});
+	
+	$('#innerpiece')
+	.on('keyup', 'input[type=text]', function(e){					
+		if (e.keyCode == 13) { //used for fill in the blank
+			$('.done-btn').click();
+		}
+	});	
+
+	$('#innerpiece')
+	.on('click', 'input', function(e){					
+		$('.done-btn').prop( 'disabled', false );
+	});	
+	
+	$('#doneContinueButtons')
+	.on('click', '.done-btn', function(){	
+
+		$('.done-btn').prop( 'disabled', true );
+		$('.continue-btn').prop( 'disabled', false ); 
+		$('.continue-btn').focus();
+
+		switch(myItem.ItemType){//disable inputs
+			case 'tf':
+				$('input[type=radio]').prop('disabled', true);
+				userresp = $('input[type=radio]:checked').val();
+				break;
+			case 'mch':
+				$('input[type=radio]').prop('disabled', true);
+				userresp = $('input[type=radio]:checked').val();
+				break;
+			case 'mmc':
+				$('input[type=checkbox]').prop('disabled', true);
+				userrespArray = [];
+				$('input[type=checkbox]:checked').each(function(){
+					userrespArray.push($(this).val());
+				});
+				userresp = userrespArray.join('');
+				break;
+			case 'fib': //fill in the blank
+				$('input').prop('disabled', true);
+				userresp = $('input[type=text]').val();
+				break;
+		}
+		
+		/* Use preferred call to get answers */
+		
+		if(userresp === myItem.Answer){
+			correctCount++;
+			$('.feedbackTxt').html('Yes! ' + correctCount + ' out of ' + itemsPerSet);
+			$('.feedbackTxt').css('color', 'darkgreen');
+		}else{
+			$('.feedbackTxt').html('No. ' + correctCount + ' out of ' + itemsPerSet);
+			$('.feedbackTxt').css('color', 'red');				
+		}
+		
+	});
+		
+	$('#doneContinueButtons')
+	.on('click', '.continue-btn', function(){
+		$('.continue-btn').prop( 'disabled', true );
+		$('input[type=radio]').prop('checked', false);			
+		$('.feedbackTxt').html('');
+		if($(this).html() === 'Go to Feedback'){
+			giveFeedback();
+		} else {
+			makeQuestion();
+		}		
+	});
+
+	makeQuestion = function() {
+
+		if($('.continue-btn').html() === 'Finish'){
+			$('.continue-btn').html('Go to Feedback');
+			$('.continue-btn').prop( 'disabled', false ); 
+			finishAct();
+			return false;
+		}
+		
+		//Activity summary if desired
+		if($('.continue-btn').html() === 'Go to Feedback'){
+			return false;
+		}
+
+		$('.questionDiv').html('');
+		myItem = myQuestions.shift();
+		setItemTemplate(myItem);
+
+		if(!myQuestions.length) {
+			$('.continue-btn').html('Finish');
+			$('.continue-btn').prop( 'disabled', true ); 
+			return false;
+		}
+
+	};
+	
+	setItemTemplate = function(value)
+	{
+		/*
+		Allows for the use of true false, multiple choice radio buttons, and multiple choice checkboxes.
+		*/
+		
+		switch(value.ItemType) 
+		{
+		
+			case 'tf':
+				var $itemTemplate = $('#tf-template').clone();
+				$($itemTemplate).prop('id', 'tf-template' + value.ItemNo);
+				$('.questionDiv').append($itemTemplate);	
+				$('.stem', $itemTemplate).html('<span class="number-dressing-1"></span>' + value.ItemNo + '<span class="number-dressing-2">.</span> ' + value.Question);
+				$('.stem', $itemTemplate).attr('data-itemno', value.ItemNo);
+				break;
+			case 'mch':
+				var $itemTemplate = $('#mch-template').clone();
+				$($itemTemplate).prop('id', 'mch-template' + value.ItemNo);
+				$('.questionDiv').append($itemTemplate);
+				$('.stem', $itemTemplate).html('<span class="number-dressing-1"></span>' + value.ItemNo + '<span class="number-dressing-2">.</span> ' + value.Question);
+				if(value.MC1) $('.options', $itemTemplate).append('<label><input type="radio" name="radios" value="a" /> ' + value.MC1 + '</label>');
+				if(value.MC2) $('.options', $itemTemplate).append('<br /><label><input type="radio" name="radios" value="b" /> ' + value.MC2 + '</label>');
+				if(value.MC3) $('.options', $itemTemplate).append('<br /><label><input type="radio" name="radios" value="c" /> ' + value.MC3 + '</label>');
+				$('.stem', $itemTemplate).attr('data-itemno', value.ItemNo);
+				break;
+			case 'mmc':
+				var $itemTemplate = $('#mmc-template').clone();
+				$($itemTemplate).prop('id', 'mmc-template' + value.ItemNo);
+				$('.questionDiv').append($itemTemplate);
+				$('.options', $itemTemplate).html('');
+				$('.stem', $itemTemplate).html('<span class="number-dressing-1"></span>' + value.ItemNo + '<span class="number-dressing-2">.</span> ' + value.Question);
+				if(value.MC1) $('.options', $itemTemplate).append('<label><input type="checkbox" value="a" /> ' + value.MC1 + '</label>');
+				if(value.MC2) $('.options', $itemTemplate).append('<br /><label><input type="checkbox" value="b" /> ' + value.MC2 + '</label>');
+				if(value.MC3) $('.options', $itemTemplate).append('<br /><label><input type="checkbox" value="c" /> ' + value.MC3 + '</label>');
+				$('.stem', $itemTemplate).attr('data-itemno', value.ItemNo);
+				break;
+			case 'fib':
+				var $itemTemplate = $('#fib-template').clone();
+				$($itemTemplate).prop('id', 'fib-template' + value.ItemNo);
+				$('.questionDiv').append($itemTemplate);
+				var myQuestion = value.Question.replace(/\|-\|/g, '<input type="text" value="" disabled/>');
+				$('.stem', $itemTemplate).attr('data-itemno', value.ItemNo);
+				$('input[type=text]:visible:first').prop('disabled', false);
+				$('input[type=text]', $itemTemplate).first().focus();
+				break;
+				
+		};			
+	};
+	
+	finishAct = function() {
+		$('#innerpiece').html('<h2>That\'s All Folks!</h2>');
+	};
+	
+	giveFeedback = function() {
+		$('.instructions').html('');
+		$('#innerpiece').html('');
+		$('#doneContinueButtons').html('<strong>Feedback</strong>: You scored ' + correctCount + ' out of ' + itemsPerSet + ' correctly.<br /><br /><a href="./">Take Me Home</a>');
+	}
+
+});
+
+//]]>
+</script>
+
+<!--JAVASCRIPT END-->	
+
+</div>
+
+<div>
+<!--HTML BEGIN
+###############################################################################
+###############################################################################
+###############################################################################
+-->	
+
+<div>
+
+	<div class="instructions">
+		<p><strong>Instructions</strong>: <span class="instructions-span"></span></p>
+	</div>
+
+	<div id="activityTemplateDiv">
+		<div id="innerpiece">
+			<div id="startActivityText">Are you sure you want to start this activity?</div>
+			<br /><br />		
+		</div>
+		<div id="doneContinueButtons"><button class="start-activity-btn">Start Activity</button>
+		
+		<!--<div class="feedbackTxt"></div>-->
+	
+	</div>
+
+</div>	
+
+<div>
+
+<!-- TEMPLATES
+###############################################################################
+###############################################################################
+###############################################################################
+-->
+
+<div id="templatesActivity" class="hidden" style="display: none;">
+	<div id="clk-template" class="clk-template template">
+		<div class="stem" data-itemno></div>
+	</div>
+	<div id="mcb-template" class="mcb-template template">
+		<div class="stem" data-itemno></div>
+	</div>
+	<div id="tf-template" class="tf-template template">
+		<div class="stem" data-itemno></div>
+		<div class="options">
+			<label><input type='radio' name='radio_btns' value='true' /> True
+			<br /><label><input type='radio' name='radio_btns' value='false' /> False
+		</div>
+	</div>
+	<div id="mch-template" class="mch-template template">
+		<div class="stem" data-itemno></div>
+		<div class="options"></div>
+	</div>
+	<div id="mmc-template" class="mmc-template template">
+		<div class="stem" data-itemno></div>
+		<div class="options"></div>
+	</div>
+	<div id="fib-template" class="fib-template template">
+		<div class="stem" data-itemno></div>
+	</div>
+<div>
+
+<!--TEMPLATES END-->
+
+<!-- STYLES
+###############################################################################
+###############################################################################
+###############################################################################
+-->
+
+<style>
+
+</style>
+
+<!--STYLES END-->
+</div>
